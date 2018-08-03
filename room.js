@@ -6,21 +6,26 @@ var Room = function(roomID, NUM_OF_PLAYERS, COUNTDOWN) {
     this.players = [];
     this.roomID = roomID;
     this._numOfPlayers = NUM_OF_PLAYERS;
-    this._countdown = COUNTDOWN;
     this.completed = false;
     this.onmessage = function() {};
     this.onPlayerEnrolled = function() {};
     this._countdownEndedCallback = function() {};
 
-    if (COUNTDOWN > 0) {
-        this.interval = setInterval(this.intervalCallback.bind(this), 1000);
-    }
+    this.setCountDown(COUNTDOWN);
 };
 
 Room.messages = {
     ROOM_REQUEST: 'ROOM_REQUEST',
     ROOM_RESPONSE: 'ROOM_RESPONSE',
     USER_ENROLLED: 'USER_ENROLLED',
+};
+
+Room.prototype.setCountDown = function(countdown) {
+    this._countdown = countdown;
+
+    if (countdown > 0) {
+        this.interval = setInterval(this.intervalCallback.bind(this), 1000);
+    }
 };
 
 Room.prototype.intervalCallback = function() {

@@ -5,16 +5,16 @@ var Room = require('./Room');
 
 var Server = function(socket, Game) {
     this.activeGames = {},
-    this.currentRoom = undefined;
+        this.currentRoom = undefined;
     this.socket = socket;
     this.Game = Game || function() {};
 };
 
 Server.prototype.start = function() {
     var app = express();
-    var port = process.env.PORT || 5000;
+    var port = process.env.PORT || this.socket;
 
-    app.use(express.static(__dirname + "/"));
+    app.use(express.static(__dirname + "/"))
 
     var server = http.createServer(app);
     server.listen(port);
@@ -57,7 +57,7 @@ Server.prototype.onConnection = function(ws) {
                             game.start();
                             server.currentRoom = undefined;
                          });
-                    }
+                    }                    
                 } else {
                     game = this.activeGames[this.currentRoom.roomID];
                 }
