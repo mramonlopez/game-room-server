@@ -1,7 +1,7 @@
 var WebSocketServer = require("ws").Server;
 var http = require("http");
 var express = require("express");
-var Room = require('./Room');
+var Room = require('./room');
 
 var Server = function(socket, Game) {
     this.activeGames = {},
