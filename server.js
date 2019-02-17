@@ -63,7 +63,7 @@ Server.prototype.onConnection = function(ws) {
                 }
 
                 // Add player to room and game
-                var playerIndex = this.currentRoom.addPlayerConnection(ws, parsed.payload.userName);
+                var playerIndex = this.currentRoom.addPlayerConnection(ws, parsed.payload.userInfo);
                 game.addPlayer(this.currentRoom.players[playerIndex], parsed.payload);
 
                 if (this.currentRoom.completed) {

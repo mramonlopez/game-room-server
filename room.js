@@ -49,7 +49,7 @@ Room.prototype.onCountdownEnded = function(callback) {
     this._countdownEndedCallback = callback;
 }
 
-Room.prototype.addPlayerConnection = function(connection, userName) {
+Room.prototype.addPlayerConnection = function(connection, userInfo) {
     var numOfPlayers = this.players.length,
         playerPosition = -1;
 
@@ -57,7 +57,7 @@ Room.prototype.addPlayerConnection = function(connection, userName) {
         playerPosition = numOfPlayers;
         numOfPlayers = this.players.push({
             connection: connection,
-            userName: userName,
+            userInfo: userInfo,
             playerIndex: playerPosition,
         });
         
@@ -78,19 +78,19 @@ Room.prototype.addPlayerConnection = function(connection, userName) {
         var user_enrolled = {
             type: Room.messages.USER_ENROLLED,
             payload: {
-                userName: userName,
+                userInfo: userInfo,
                 playerIndex: playerPosition
             }
         };
 
         this.sendMessageToAllExcept(user_enrolled, playerPosition)
 
-        // Send to client all connected user
+        // Send to new user all connected ones 
         for (var i = 0; i < numOfPlayers - 1; i++) {
             user_enrolled = {
                 type: Room.messages.USER_ENROLLED,
                 payload: {
-                    userName: this.players[i].userName,
+                    userInfo: this.players[i].userInfo,
                     playerIndex: i
                 }
             };
