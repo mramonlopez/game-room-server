@@ -1,0 +1,28 @@
+{
+  "name": "chat-example",
+  "version": "1.0.0",
+  "description": "A char client to test game-room-server",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "budo main.js:chat.min.js --live -- -d -e main.js -t [babelify --comments false --presets env]",
+    "prebuild": "mkdirp build",
+    "build": "npm run build:js && npm run build:html && npm run copy:all",
+    "build:js": "browserify -d -e main.js -t [babelify --comments false --presets env] | uglifyjs -cm > build/chat.min.js",
+    "build:html": "htmlprocessor index.html -o build/index.html"
+  },
+  "author": "M. Ramón López Torres",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0",
+    "browserify": "^14.5.0",
+    "budo": "^10.0.4",
+    "clean-css-cli": "^4.1.10",
+    "htmlprocessor": "^0.2.6",
+    "mkdirp": "^0.5.1",
+    "ncp": "^2.0.0",
+    "uglify-js": "^3.1.6"
+  }
+}

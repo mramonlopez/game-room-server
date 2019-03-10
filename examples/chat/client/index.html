@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>title</title>
+    <script src="chat.min.js"></script>
+  </head>
+  <body onload="javascript:loaded()">
+    <from id="login">
+        <label for="nick">Nick: </label>
+        <input type="text" name="nick" id="nick"/>
+        <input type="button" name="connect" id="connect" value="Enter"/>
+    </from>
+    <from id="chat" style="display:none">
+      <div id="chat-content" style="width: 500px;">Chat</div>
+      <input type="text" name="message" id="message"/>
+      <input type="button" name="send" id="send" value="Send"/>
+  </from>
+  </body>
+</html>

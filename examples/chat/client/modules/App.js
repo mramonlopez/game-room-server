@@ -10,41 +10,40 @@ class App {
 
         this._socket = new SocketClient();
 
-        this._socket.addEvents(['ROOM_RESPONSE', 'USER_ENROLLED', 'GAME_STARTS', 'END_OF_GAME','COUNT_DOWN', 'GAME_STATUS']);
+        this._socket.addEvents(['ROOM_RESPONSE', 'USER_ENROLLED', 'END_OF_GAME','COUNTDOWN', 'PUBLIC_MESSAGE']);
 
         this._socket.addListener('CONNECTED', this.onConnect, this);
         this._socket.addListener('ROOM_RESPONSE', this.onRoomResponse, this);
-        this._socket.addListener('GAME_STATUS', this.onGameStatus, this);
+        this._socket.addListener('PUBLIC_MESSAGE', this.onPublicMessage, this);
 
+        this._socket.connect('ws:/localhost:1234');
+    }
 
-        this._socket.connect('ws:/localhost:1337');
+    setOnMessageCallback(callback) {
+        this._onMesssageCallback = callback;
+    }
+
+    enterRoom(nick) {
+        this._socket.send('ROOM_REQUEST', {userName: nick});
+    }
+
+    sendPublicMessage(message) {
+        this._socket.send('PUBLIC_MESSAGE', {message: message})
     }
 
     onConnect() {
         console.log('connected!!!!');
-
-
-        this._socket.send('ROOM_REQUEST', {userName: 'web'});
     }
 
     onRoomResponse(data) {
-        this.teamID = data.payload.playerIndex;
+        console.log("ROOM:", data.payload.roomID);
     }
 
-    onGameStatus(data) {
-        this.status = data.payload;
-        this.callback && this.callback();
+    onPublicMessage(data) {
+        let user = data.payload.user;
+        let message = data.payload.message
+        this._onMesssageCallback && this._onMesssageCallback(user, message);
     }
-
-    setUpdateCallback(callback) {
-        this.callback = callback;
-    }
-
-    sendPath(player, path) {
-        this._socket.send('SET_PATH', {playerID: player, path: path});
-    }
-
-    
 }
 
 export let app = new App();
