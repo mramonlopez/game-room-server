@@ -1,0 +1,15 @@
+{
+  "name": "chat-example",
+  "version": "1.0.0",
+  "description": "A char server built with game-room-sever",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "M. Ramón López Torres",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "game-room-server": "^0.3.0"
+  }
+}
