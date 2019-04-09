@@ -18,7 +18,8 @@ var Room = function(roomID, NUM_OF_PLAYERS, COUNTDOWN) {
 Room.messages = {
     ROOM_REQUEST: 'ROOM_REQUEST',
     ROOM_RESPONSE: 'ROOM_RESPONSE',
-    USER_ENROLLED: 'USER_ENROLLED',
+    ACTIVE_ROOMS: 'ACTIVE_ROOMS',
+    USER_ENROLLED: 'USER_ENROLLED'
 };
 
 Room.prototype.setCountDown = function(countdown) {

@@ -33,52 +33,60 @@ Server.prototype.onConnection = function(ws) {
 
         if (parsed.type === Room.messages.ROOM_REQUEST) {
             // Reconnect player
-            if (parsed.payload.roomID && parsed.payload.playerIndex) {
-
-                var room = this.activeGames[parsed.payload.roomID].room;
-
-                room.reconectPlayer(parsed.payload.playerIndex);
-            } else { // New player
-                var game;
-
-                if (!this.currentRoom) {
-                    // New room
-                    var roomID = 'room' + ((new Date()).getTime()).toString();
-
-                    this.currentRoom = new Room(roomID, this.Game.NUM_OF_PLAYERS, this.Game.COUNTDOWN);
-                    game = new this.Game(this.currentRoom);
-
-                    this.activeGames[this.currentRoom.roomID] = game;
-
-                    if (this.Game.COUNTDOWN) {
-                        var server = this;
-
-                        this.currentRoom.onCountdownEnded(function() {
-                            game.start();
-                            server.currentRoom = undefined;
-                         });
-                    }                    
-                } else {
-                    game = this.activeGames[this.currentRoom.roomID];
-                }
-
-                // Add player to room and game
-                var playerIndex = this.currentRoom.addPlayerConnection(ws, parsed.payload.userInfo);
-                game.addPlayer(this.currentRoom.players[playerIndex], parsed.payload);
-
-                if (this.currentRoom.completed) {
-                    this.currentRoom = undefined;
-
-                    // Only if Game hasn't a pregame countdown period
-                    if (!this.Game.COUNTDOWN) {
-                        game.start();
-                    }
-                }
-            }
+            this.onRoomRequest(parsed, ws);
+        } else if (parsed.type === Room.messages.ACTIVE_ROOMS) {
+            this.onRoomListRequest(ws);
         }
     };
 
     ws.once('message', onMessage.bind(this));
 };
+
+Server.prototype.onRoomListRequest = function(ws) {
+    var message = {
+        type: 'ROOM_LIST',
+        payload: ['ok']
+    };
+    
+    ws.send(JSON.stringify(message));
+    console.log('ACTIVE_ROOMS ************************');
+};
+
+Server.prototype.onRoomRequest = function(parsed, ws) {
+    if (parsed.payload.roomID && parsed.payload.playerIndex) {
+        var room = this.activeGames[parsed.payload.roomID].room;
+        room.reconectPlayer(parsed.payload.playerIndex);
+    }
+    else { // New player
+        var game;
+        if (!this.currentRoom) {
+            // New room
+            var roomID = 'room' + ((new Date()).getTime()).toString();
+            this.currentRoom = new Room(roomID, this.Game.NUM_OF_PLAYERS, this.Game.COUNTDOWN);
+            game = new this.Game(this.currentRoom);
+            this.activeGames[this.currentRoom.roomID] = game;
+            if (this.Game.COUNTDOWN) {
+                var server = this;
+                this.currentRoom.onCountdownEnded(function () {
+                    game.start();
+                    server.currentRoom = undefined;
+                });
+            }
+        }
+        else {
+            game = this.activeGames[this.currentRoom.roomID];
+        }
+        // Add player to room and game
+        var playerIndex = this.currentRoom.addPlayerConnection(ws, parsed.payload.userInfo);
+        game.addPlayer(this.currentRoom.players[playerIndex], parsed.payload);
+        if (this.currentRoom.completed) {
+            this.currentRoom = undefined;
+            // Only if Game hasn't a pregame countdown period
+            if (!this.Game.COUNTDOWN) {
+                game.start();
+            }
+        }
+    }
+}
 
 module.exports = Server;
