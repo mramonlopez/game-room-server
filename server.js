@@ -36,6 +36,9 @@ Server.prototype.onConnection = function(ws) {
             this.onRoomRequest(parsed, ws);
         } else if (parsed.type === Room.messages.ACTIVE_ROOMS) {
             this.onRoomListRequest(ws);
+            ws.close(1000, 'ROOMS LISTED');
+        } else if (parsed.type === Room.messages.VIEW_ROOM) {
+            this.onViewRoom(parsed.payload, ws);
         }
     };
 
@@ -61,6 +64,12 @@ Server.prototype.onRoomListRequest = function(ws) {
     }
     
     ws.send(JSON.stringify(message));
+};
+
+Server.prototype.onViewRoom = function(roomID, ws) {
+    if (!this.activeGames.hasOwnProperty(roomID) || (this.currentRoom && this.currentRoom.roomID !== roomID)) {
+        this.activeGames[roomID].addViewerConnection(ws);
+    }
 };
 
 Server.prototype.onRoomRequest = function(parsed, ws) {
