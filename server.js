@@ -45,11 +45,22 @@ Server.prototype.onConnection = function(ws) {
 Server.prototype.onRoomListRequest = function(ws) {
     var message = {
         type: 'ROOM_LIST',
-        payload: ['ok']
+        payload: []
     };
+
+    for(var roomID in this.activeGames) {
+        // Skip incomplete current room
+        if (this.activeGames.hasOwnProperty(roomID) && this.currentRoom && this.currentRoom.roomID !== roomID) {
+            var room = {
+                roomID: roomID,
+                gameInfo: this.activeGames[roomID].getGameInfo()
+            };
+
+            message.payload.push(room);
+        }
+    }
     
     ws.send(JSON.stringify(message));
-    console.log('ACTIVE_ROOMS ************************');
 };
 
 Server.prototype.onRoomRequest = function(parsed, ws) {
