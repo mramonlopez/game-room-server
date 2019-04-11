@@ -4,8 +4,11 @@ var express = require("express");
 var Room = require('./room');
 
 var Server = function(socket, Game) {
-    this.activeGames = {},
-        this.currentRoom = undefined;
+    this.activeGames = {
+        games: {},
+        roomIDs: []
+    },
+    this.currentRoom = null;
     this.socket = socket;
     this.Game = Game || function() {};
 };
@@ -51,12 +54,24 @@ Server.prototype.onRoomListRequest = function(ws) {
         payload: []
     };
 
-    for(var roomID in this.activeGames) {
-        // Skip incomplete current room
-        if (this.activeGames.hasOwnProperty(roomID) && this.currentRoom && this.currentRoom.roomID !== roomID) {
+    var start, end;
+
+    if (this.activeGames.roomIDs.length > this.Game.MAX_ROOMS) {
+        start = Math.floor(Math.random() * (1 + this.activeGames.roomIDs.length - this.Game.MAX_ROOMS));
+        end = start + this.Game.MAX_ROOMS;
+    } else {
+        start = 0;
+        end = this.activeGames.roomIDs.length;
+    }
+
+    for(var i = start; i < end; i++) {
+        var roomID = this.activeGames.roomIDs[i];
+
+        // Skip (incomplete) current room
+        if (this.activeGames.games.hasOwnProperty(roomID) && (this.currentRoom === null || this.currentRoom.roomID !== roomID)) {
             var room = {
                 roomID: roomID,
-                gameInfo: this.activeGames[roomID].getGameInfo()
+                gameInfo: this.activeGames.games[roomID].getGameInfo()
             };
 
             message.payload.push(room);
@@ -67,14 +82,14 @@ Server.prototype.onRoomListRequest = function(ws) {
 };
 
 Server.prototype.onViewRoom = function(roomID, ws) {
-    if (!this.activeGames.hasOwnProperty(roomID) || (this.currentRoom && this.currentRoom.roomID !== roomID)) {
-        this.activeGames[roomID].addViewerConnection(ws);
+    if (this.activeGames.games.hasOwnProperty(roomID) && (!this.currentRoom || this.currentRoom.roomID !== roomID)) {
+        this.activeGames.games[roomID].getRoom().addViewerConnection(ws);
     }
 };
 
 Server.prototype.onRoomRequest = function(parsed, ws) {
     if (parsed.payload.roomID && parsed.payload.playerIndex) {
-        var room = this.activeGames[parsed.payload.roomID].room;
+        var room = this.activeGames.games[parsed.payload.roomID].room;
         room.reconectPlayer(parsed.payload.playerIndex);
     }
     else { // New player
@@ -84,23 +99,25 @@ Server.prototype.onRoomRequest = function(parsed, ws) {
             var roomID = 'room' + ((new Date()).getTime()).toString();
             this.currentRoom = new Room(roomID, this.Game.NUM_OF_PLAYERS, this.Game.COUNTDOWN);
             game = new this.Game(this.currentRoom);
-            this.activeGames[this.currentRoom.roomID] = game;
+            
+            this.activeGames.games[this.currentRoom.roomID] = game;
+            this.activeGames.roomIDs.push(roomID);
+
             if (this.Game.COUNTDOWN) {
                 var server = this;
                 this.currentRoom.onCountdownEnded(function () {
                     game.start();
-                    server.currentRoom = undefined;
+                    server.currentRoom = null;
                 });
             }
-        }
-        else {
-            game = this.activeGames[this.currentRoom.roomID];
+        } else {
+            game = this.activeGames.games[this.currentRoom.roomID];
         }
         // Add player to room and game
         var playerIndex = this.currentRoom.addPlayerConnection(ws, parsed.payload.userInfo);
         game.addPlayer(this.currentRoom.players[playerIndex], parsed.payload);
         if (this.currentRoom.completed) {
-            this.currentRoom = undefined;
+            this.currentRoom = null;
             // Only if Game hasn't a pregame countdown period
             if (!this.Game.COUNTDOWN) {
                 game.start();

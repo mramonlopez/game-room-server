@@ -114,8 +114,6 @@ Room.prototype.addPlayerConnection = function(connection, userInfo) {
 
 Room.prototype.addViewerConnection = function(connection) {
     this.viewers.push(connection);
-
-
 }
 
 Room.prototype.reconectPlayer = function(playerIndex, connection) {
@@ -161,7 +159,7 @@ Room.prototype.sendMessageToAllExcept = function(message, player) {
 
 Room.prototype.sendMessageToViewers = function(message) {
     for (var i = 0, len = this.viewers.length; i < len; i++) {
-        var conn = this.viewers[i].connection;
+        var conn = this.viewers[i];
 
         if (conn.readyState === WebSocket.OPEN) {
             conn.send(JSON.stringify(message));
