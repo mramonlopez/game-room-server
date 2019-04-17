@@ -20,6 +20,7 @@ Room.messages = {
     ROOM_RESPONSE: 'ROOM_RESPONSE',
     ACTIVE_ROOMS: 'ACTIVE_ROOMS',
     VIEW_ROOM: 'VIEW_ROOM',
+    WATCH_ROOM_RESPONSE: 'WATCH_ROOM_RESPONSE',
     USER_ENROLLED: 'USER_ENROLLED'
 };
 
@@ -114,6 +115,13 @@ Room.prototype.addPlayerConnection = function(connection, userInfo) {
 
 Room.prototype.addViewerConnection = function(connection) {
     this.viewers.push(connection);
+
+    var response = {
+        type: Room.messages.WATCH_ROOM_RESPONSE,
+        payload: this.roomID
+    };
+
+    connection.send(JSON.stringify(response));
 }
 
 Room.prototype.reconectPlayer = function(playerIndex, connection) {
@@ -189,6 +197,10 @@ Room.prototype.startListening = function() {
 Room.prototype.close = function() {
     for (var i = 0, len = this.players.length; i < len; i++) {
         this.players[i].connection.close(1000, 'ROOM CLOSED');
+    }
+
+    for (var i = 0, len = this.viewers.length; i < len; i++) {
+        this.viewers[i].close(1000, 'ROOM CLOSED');
     }
 };
 
