@@ -4,6 +4,7 @@ const WebSocket = require('ws');
 
 var Room = function(roomID, NUM_OF_PLAYERS, COUNTDOWN) {
     this.players = [];
+    this.viewers = [];
     this.roomID = roomID;
     this._numOfPlayers = NUM_OF_PLAYERS;
     this.completed = false;
@@ -17,7 +18,10 @@ var Room = function(roomID, NUM_OF_PLAYERS, COUNTDOWN) {
 Room.messages = {
     ROOM_REQUEST: 'ROOM_REQUEST',
     ROOM_RESPONSE: 'ROOM_RESPONSE',
-    USER_ENROLLED: 'USER_ENROLLED',
+    ACTIVE_ROOMS: 'ACTIVE_ROOMS',
+    VIEW_ROOM: 'VIEW_ROOM',
+    WATCH_ROOM_RESPONSE: 'WATCH_ROOM_RESPONSE',
+    USER_ENROLLED: 'USER_ENROLLED'
 };
 
 Room.prototype.setCountDown = function(countdown) {
@@ -53,58 +57,72 @@ Room.prototype.addPlayerConnection = function(connection, userInfo) {
     var numOfPlayers = this.players.length,
         playerPosition = -1;
 
-    if (numOfPlayers < this._numOfPlayers) {
-        playerPosition = numOfPlayers;
-        numOfPlayers = this.players.push({
-            connection: connection,
-            userInfo: userInfo,
+    if (numOfPlayers >= this._numOfPlayers) {
+        this.completed = true;
+        return playerPosition;
+    }
+
+    playerPosition = numOfPlayers;
+    numOfPlayers = this.players.push({
+        connection: connection,
+        userInfo: userInfo,
+        playerIndex: playerPosition,
+    });
+    
+    // Notify to client its room id
+    var response = {
+        type: Room.messages.ROOM_RESPONSE,
+        payload: {
+            roomID: this.roomID,
             playerIndex: playerPosition,
-        });
-        
-        // Notify to client its room id
-        var response = {
-            type: Room.messages.ROOM_RESPONSE,
-            payload: {
-                roomID: this.roomID,
-                playerIndex: playerPosition,
-                totalPlayers: this._numOfPlayers,
-                currentPlayers: this.players.length
-            }
-        };
+            totalPlayers: this._numOfPlayers,
+            currentPlayers: this.players.length
+        }
+    };
 
-        this.sendMessageToPlayer(response, playerPosition);
+    this.sendMessageToPlayer(response, playerPosition);
 
-        // Notify to all enrolled player the new user added
-        var user_enrolled = {
+    // Notify to all enrolled player the new user added
+    var user_enrolled = {
+        type: Room.messages.USER_ENROLLED,
+        payload: {
+            userInfo: userInfo,
+            playerIndex: playerPosition
+        }
+    };
+
+    this.sendMessageToAllExcept(user_enrolled, playerPosition)
+
+    // Send to new user all connected ones 
+    for (var i = 0; i < numOfPlayers - 1; i++) {
+        user_enrolled = {
             type: Room.messages.USER_ENROLLED,
             payload: {
-                userInfo: userInfo,
-                playerIndex: playerPosition
+                userInfo: this.players[i].userInfo,
+                playerIndex: i
             }
         };
 
-        this.sendMessageToAllExcept(user_enrolled, playerPosition)
+        this.sendMessageToPlayer(user_enrolled, playerPosition);
+    }
 
-        // Send to new user all connected ones 
-        for (var i = 0; i < numOfPlayers - 1; i++) {
-            user_enrolled = {
-                type: Room.messages.USER_ENROLLED,
-                payload: {
-                    userInfo: this.players[i].userInfo,
-                    playerIndex: i
-                }
-            };
-
-            this.sendMessageToPlayer(user_enrolled, playerPosition);
-        }
-
-        if (numOfPlayers >= this._numOfPlayers) {
-            this.completed = true;
-        }
+    if (numOfPlayers >= this._numOfPlayers) {
+        this.completed = true;
     }
 
     return playerPosition;
 };
+
+Room.prototype.addViewerConnection = function(connection) {
+    this.viewers.push(connection);
+
+    var response = {
+        type: Room.messages.WATCH_ROOM_RESPONSE,
+        payload: this.roomID
+    };
+
+    connection.send(JSON.stringify(response));
+}
 
 Room.prototype.reconectPlayer = function(playerIndex, connection) {
     this.players[playerIndex].connection = connection;
@@ -129,6 +147,8 @@ Room.prototype.sendMessageToAll = function(message) {
             conn.send(JSON.stringify(message));
         }
     }
+
+    this.sendMessageToViewers(message);
 };
 
 Room.prototype.sendMessageToAllExcept = function(message, player) {
@@ -141,7 +161,23 @@ Room.prototype.sendMessageToAllExcept = function(message, player) {
 	        }
         }
     }
+
+    this.sendMessageToViewers(message);
 };
+
+Room.prototype.sendMessageToViewers = function(message) {
+    for (var i = 0, len = this.viewers.length; i < len; i++) {
+        var conn = this.viewers[i];
+
+        if (conn.readyState === WebSocket.OPEN) {
+            conn.send(JSON.stringify(message));
+        } else {
+            this.viewers.splice(i, 1); 
+            i--;
+            len = this.viewers.length;
+        }
+    }
+}
 
 Room.prototype.startListening = function() {
     for (var i = 0, len = this.players.length; i < len; i++) {
@@ -161,6 +197,10 @@ Room.prototype.startListening = function() {
 Room.prototype.close = function() {
     for (var i = 0, len = this.players.length; i < len; i++) {
         this.players[i].connection.close(1000, 'ROOM CLOSED');
+    }
+
+    for (var i = 0, len = this.viewers.length; i < len; i++) {
+        this.viewers[i].close(1000, 'ROOM CLOSED');
     }
 };
 
