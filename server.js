@@ -95,9 +95,14 @@ Server.prototype.onRoomRequest = function(parsed, ws) {
     else { // New player
         var game;
         if (!this.currentRoom) {
+            var server = this;
+            var onClose = function(roomID) {
+                server.removeRoom(roomID);
+            }
+
             // New room
             var roomID = 'room' + ((new Date()).getTime()).toString();
-            this.currentRoom = new Room(roomID, this.Game.NUM_OF_PLAYERS, this.Game.COUNTDOWN);
+            this.currentRoom = new Room(roomID, onClose, this.Game.NUM_OF_PLAYERS, this.Game.COUNTDOWN);
             game = new this.Game(this.currentRoom);
             
             this.activeGames.games[this.currentRoom.roomID] = game;
@@ -125,5 +130,15 @@ Server.prototype.onRoomRequest = function(parsed, ws) {
         }
     }
 }
+
+Server.prototype.removeRoom = function(roomID) {
+    if (this.activeGames.games.hasOwnProperty(roomID)) {
+        delete this.activeGames.games[roomID];
+
+        var i = this.activeGames.roomIDs.indexOf(roomID);
+        this.activeGames.roomIDs.splice(i, 1);
+    }
+}
+
 
 module.exports = Server;

@@ -2,11 +2,12 @@
 
 const WebSocket = require('ws');
 
-var Room = function(roomID, NUM_OF_PLAYERS, COUNTDOWN) {
+var Room = function(roomID, onCloseCallback, NUM_OF_PLAYERS, COUNTDOWN) {
     this.players = [];
     this.viewers = [];
     this.roomID = roomID;
     this._numOfPlayers = NUM_OF_PLAYERS;
+    this._onClose = onCloseCallback;
     this.completed = false;
     this.onmessage = function() {};
     this.onPlayerEnrolled = function() {};
@@ -202,6 +203,8 @@ Room.prototype.close = function() {
     for (var i = 0, len = this.viewers.length; i < len; i++) {
         this.viewers[i].close(1000, 'ROOM CLOSED');
     }
+
+    this._onClose(this.roomID);
 };
 
 module.exports = Room;
